@@ -61,12 +61,56 @@ graph TD
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### Prerequisites & AWS Configuration
 
-Ensure the following tools are installed on your system:
-- **AWS CLI** (configured via `aws configure` with valid access keys)
-- **Terraform** (>= 1.0.0)
-- **Ansible** (if running on Windows, use **WSL** or a Linux control host)
+Ensure the following tools are installed on your control system:
+*   **Terraform** (>= 1.0.0)
+*   **Ansible** (if running on Windows, use **WSL** or a Linux control host)
+*   **AWS CLI** (installed and configured)
+
+Follow these step-by-step instructions to set up your AWS environment before deploying:
+
+#### 1. AWS Account & IAM User Configuration
+1. Sign in to the [AWS Management Console](https://aws.amazon.com/).
+2. Open the **IAM (Identity and Access Management)** dashboard.
+3. Navigate to **Users** and click **Create User**.
+4. Set a user name (e.g., `travelmemory-deployer`).
+5. Under **Permissions options**, select **Attach policies directly** and attach the **AdministratorAccess** managed policy (needed for VPC, EC2, NAT Gateway, Security Group, and IAM Profile management).
+6. Click **Create User**.
+7. Select the newly created user, click the **Security credentials** tab, scroll down to **Access keys**, and click **Create access key**.
+8. Select **Command Line Interface (CLI)** as the use case, check the confirmation, and click **Next** and **Create access key**.
+9. **Crucial:** Download the `.csv` file containing your **Access Key ID** and **Secret Access Key**. Store them securely.
+
+#### 2. Local AWS CLI Authentication
+1. Install the [AWS CLI](https://aws.amazon.com/cli/) on your local machine.
+2. Open a terminal (Git Bash, WSL, or Command Prompt) and run:
+   ```bash
+   aws configure
+   ```
+3. Enter the parameters when prompted:
+   *   **AWS Access Key ID:** *[Paste your Access Key ID]*
+   *   **AWS Secret Access Key:** *[Paste your Secret Access Key]*
+   *   **Default region name:** `us-east-1` (or your preferred region)
+   *   **Default output format:** `json`
+4. Test the authentication by querying AWS S3:
+   ```bash
+   aws s3 ls
+   ```
+
+#### 3. SSH Key Pair Generation
+You need local SSH credentials to establish secure connections with the instances:
+1. Open a terminal and run the key-generator command:
+   ```bash
+   ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa
+   ```
+2. Press Enter to skip the passphrase.
+3. This creates:
+   *   Private Key: `~/.ssh/id_rsa` (configured in Ansible)
+   *   Public Key: `~/.ssh/id_rsa.pub` (uploaded to AWS via Terraform)
+4. Copy the public key text to paste into `terraform.tfvars`:
+   ```bash
+   cat ~/.ssh/id_rsa.pub
+   ```
 
 ---
 
