@@ -110,11 +110,6 @@ If you are deploying from a standard host system or wish to install tools indivi
     choco install terraform
     ```
     *(Or download the binary from [Terraform Downloads](https://developer.hashicorp.com/terraform/downloads) and add its folder to your system PATH)*
-*   **macOS (via Homebrew):**
-    ```bash
-    brew tap hashicorp/tap
-    brew install hashicorp/tap/terraform
-    ```
 *   **Linux (Ubuntu/Debian):**
     ```bash
     wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
@@ -138,10 +133,6 @@ If you are deploying from a standard host system or wish to install tools indivi
        sudo add-apt-repository --yes --update ppa:ansible/ansible
        sudo apt install -y ansible
        ```
-*   **macOS (via Homebrew):**
-    ```bash
-    brew install ansible
-    ```
 *   **Linux (Ubuntu/Debian):**
     ```bash
     sudo apt update
@@ -152,10 +143,6 @@ If you are deploying from a standard host system or wish to install tools indivi
 
 #### 3. Installing AWS CLI
 *   **Windows:** Download and run the [AWS CLI MSI installer](https://awscli.amazonaws.com/AWSCLIV2.msi).
-*   **macOS (via Homebrew):**
-    ```bash
-    brew install awscli
-    ```
 *   **Linux:**
     ```bash
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
