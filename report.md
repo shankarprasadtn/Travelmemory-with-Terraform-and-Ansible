@@ -85,49 +85,42 @@ The web playbook automates the deployment of the Node.js/React application:
 
 ---
 
-## 4. Component Interaction & Data Flow
+### 4. Component Interaction & Data Flow (Infographic Method)
 
-Understanding how components interact is critical for maintaining this multi-tier architecture.
+The interaction between the user, the web server, and the database server follows a structured multi-tier request cycle. The diagram below illustrates this flow:
 
-```
-+------------------------------------------------------------------------------------------+
-|                                    1. USER BROWSER                                       |
-+--------------------------------------------+---------------------------------------------+
-                                             |
-                   Request Webpage           |            API Call (/api/trip)
-                    (HTTP Port 80)           |               (HTTP Port 80)
-                                             v
-+--------------------------------------------+---------------------------------------------+
-|                                    2. WEB SERVER (EC2)                                   |
-|   +----------------------------------------+-----------------------------------------+   |
-|   |                              NGINX (Reverse Proxy)                               |   |
-|   +-------------------+------------------------------------+-------------------------+   |
-|                       |                                    |                             |
-|         Serves        |                                    |  Forward to                 |
-|      Static Files     |                                    |  Localhost:3001             |
-|                       v                                    v                             |
-|   +-------------------+--------------------+   +-----------+-------------------------+   |
-|   |         React Compiled Assets          |   |       Express.js Server (PM2)       |   |
-|   |       (Location: /frontend/build)      |   |            (Port: 3001)             |   |
-|   +----------------------------------------+   +-----------+-------------------------+   |
-+------------------------------------------------------------|-----------------------------+
-                                                             |
-                                                             | Connect and Query
-                                                             | (Private Link - Port 27017)
-                                                             v
-+------------------------------------------------------------+-----------------------------+
-|                                  3. DATABASE SERVER (EC2)                                |
-|   +----------------------------------------------------------------------------------+   |
-|   |                                  MongoDB Server                                  |   |
-|   |                            (Location: Private Subnet)                            |   |
-|   +----------------------------------------------------------------------------------+   |
-+------------------------------------------------------------------------------------------+
+![Component Interaction & Data Flow Infographic](data_flow_infographic.png)
+
+### 🔄 Detailed Data Flow Sequence
+
+Here is the step-by-step sequence of network requests, Nginx routing, and database authentication:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User Browser
+    participant Nginx as Web Server (Nginx)
+    participant Node as Web Server (Node.js/PM2)
+    database DB as DB Server (MongoDB)
+
+    User->>Nginx: 1. HTTP GET / (Request website)
+    Nginx-->>User: 2. Serves static React assets (HTML, JS, CSS)
+    Note over User: React client renders locally
+
+    User->>Nginx: 3. HTTP POST /api/trip (Create travel entry)
+    Note over Nginx: Reverse Proxy intercepts /api/ and rewrites URL
+    Nginx->>Node: 4. Forwards to localhost:3001/trip
+    Node->>DB: 5. Connect & Query DB via Private IP:27017 (Authenticated)
+    DB-->>Node: 6. Returns document insertion success
+    Node-->>Nginx: 7. Sends API response
+    Nginx-->>User: 8. HTTP 200 OK (Updates React UI state)
 ```
 
-1.  **Client-Side Initialization:** The client accesses the web server IP via port `80`. Nginx serves the compiled React HTML and Javascript assets.
-2.  **State Management & Requests:** When a user adds a travel memory, React fires an Axios HTTP POST request to `http://<web-server-public-ip>/api/trip`.
-3.  **Reverse Proxying:** Nginx intercepts the request at `/api/trip`, strips the `/api` prefix, and forwards it to the local Express backend running on `http://localhost:3001/trip`.
-4.  **Database CRUD Operations:** The Express backend parses the incoming request, authenticates against MongoDB on the private database server (`10.0.2.x:27017`), writes the JSON payload containing the memory details, and returns a JSON response back to the client via Nginx.
+1.  **Static Content Delivery:** The client accesses the web server over port `80`. Nginx directly serves the pre-compiled React static assets from `/var/www/travelmemory/frontend/build` for rapid page load.
+2.  **API Call Interception:** When a user submits the Travel Memory form, the React app running in the browser sends an HTTP POST request to `http://<web-server-public-ip>/api/trip`.
+3.  **URL Rewrite & Forwarding:** Nginx acts as a reverse proxy, intercepts the `/api/` prefix, strips it, and forwards the request internally to the Node.js Express backend running on `http://127.0.0.1:3001/trip`. This eliminates CORS issues since both frontend and API share the same port 80.
+4.  **Isolated Database Execution:** The Express backend authenticates using credentials stored in `.env` and issues a MongoDB write query to the Database Server (`10.0.2.x:27017`) over the private subnet. The database processes the write and sends back the result, which cascades back to Nginx and updates the user's browser.
+
 
 ---
 
