@@ -1,0 +1,8 @@
+---
+# Main deployment playbook for the TravelMemory application
+
+- name: Run Database Server Configuration
+  import_playbook: playbooks/db.yml
+
+- name: Run Web Server Configuration and Application Deployment
+  import_playbook: playbooks/web.yml

@@ -1,0 +1,123 @@
+---
+- name: Configure MongoDB Database Server
+  hosts: db
+  become: yes
+  vars:
+    mongodb_version: "7.0"
+    mongodb_admin_user: "admin"
+    mongodb_admin_password: "AdminSecurePassword123"
+    mongodb_app_db: "travelmemory"
+    mongodb_app_user: "travel_user"
+    mongodb_app_password: "TravelSecurePassword456"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install dependencies
+      apt:
+        name:
+          - gnupg
+          - curl
+        state: present
+
+    - name: Import MongoDB GPG public key
+      shell: |
+        curl -fsSL https://www.mongodb.org/static/pgp/server-{{ mongodb_version }}.asc | \
+        gpg --dearmor --yes -o /usr/share/keyrings/mongodb-server-{{ mongodb_version }}.gpg
+      args:
+        creates: "/usr/share/keyrings/mongodb-server-{{ mongodb_version }}.gpg"
+
+    - name: Add MongoDB APT repository
+      apt_repository:
+        filename: "mongodb-org-{{ mongodb_version }}"
+        repo: "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-{{ mongodb_version }}.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/{{ mongodb_version }} multiverse"
+        state: present
+
+    - name: Install MongoDB Packages
+      apt:
+        name:
+          - mongodb-org
+          - mongodb-mongosh
+        state: present
+        update_cache: yes
+
+    - name: Configure MongoDB to listen on all interfaces
+      replace:
+        path: /etc/mongod.conf
+        regexp: 'bindIp: 127\.0\.0\.1'
+        replace: 'bindIp: 0.0.0.0'
+      notify: Restart MongoDB
+
+    - name: Start and enable MongoDB Service
+      systemd:
+        name: mongod
+        state: started
+        enabled: yes
+
+    - name: Flush handlers to restart MongoDB if config changed
+      meta: flush_handlers
+
+    # Wait for MongoDB to start accepting connections
+    - name: Wait for MongoDB port 27017 to be active
+      wait_for:
+        port: 27017
+        timeout: 30
+
+    - name: Create database admin user (unauthenticated session)
+      shell: |
+        mongosh --eval "
+          db.getSiblingDB('admin').createUser({
+            user: '{{ mongodb_admin_user }}',
+            pwd: '{{ mongodb_admin_password }}',
+            roles: [
+              { role: 'userAdminAnyDatabase', db: 'admin' },
+              { role: 'dbAdminAnyDatabase', db: 'admin' },
+              { role: 'readWriteAnyDatabase', db: 'admin' }
+            ]
+          })
+        "
+      register: admin_user_creation
+      failed_when: 
+        - admin_user_creation.rc != 0
+        - "'already exists' not in admin_user_creation.stderr"
+        - "'already exists' not in admin_user_creation.stdout"
+      changed_when: "'Successfully added user' in admin_user_creation.stdout"
+
+    - name: Create TravelMemory app database user
+      shell: |
+        mongosh --eval "
+          db.getSiblingDB('{{ mongodb_app_db }}').createUser({
+            user: '{{ mongodb_app_user }}',
+            pwd: '{{ mongodb_app_password }}',
+            roles: [
+              { role: 'readWrite', db: '{{ mongodb_app_db }}' }
+            ]
+          })
+        "
+      register: app_user_creation
+      failed_when: 
+        - app_user_creation.rc != 0
+        - "'already exists' not in app_user_creation.stderr"
+        - "'already exists' not in app_user_creation.stdout"
+      changed_when: "'Successfully added user' in app_user_creation.stdout"
+
+    - name: Enable authentication in MongoDB configuration
+      blockinfile:
+        path: /etc/mongod.conf
+        insertafter: '^#security:'
+        block: |
+          security:
+            authorization: enabled
+      notify: Restart MongoDB
+
+    - name: Trigger database restart to enforce authorization
+      meta: flush_handlers
+
+  handlers:
+    - name: Restart MongoDB
+      systemd:
+        name: mongod
+        state: restarted

@@ -1,0 +1,2 @@
+PORT=3001
+MONGO_URI=mongodb://{{ mongodb_app_user }}:{{ mongodb_app_password }}@{{ hostvars['dbserver']['ansible_host'] }}:27017/{{ mongodb_app_db }}?authSource={{ mongodb_app_db }}
