@@ -61,14 +61,72 @@ graph TD
 
 ## 🚀 Getting Started
 
-### Prerequisites & AWS Configuration
+### Prerequisites & Tool Installation
 
-Ensure the following tools are installed on your control system:
-*   **Terraform** (>= 1.0.0)
-*   **Ansible** (if running on Windows, use **WSL** or a Linux control host)
-*   **AWS CLI** (installed and configured)
+Ensure you have **AWS CLI**, **Terraform**, and **Ansible** installed on your control system. Follow the steps below for your operating system:
 
-Follow these step-by-step instructions to set up your AWS environment before deploying:
+#### 1. Installing Terraform
+*   **Windows (via Chocolatey):**
+    ```powershell
+    choco install terraform
+    ```
+    *(Or download the binary from [Terraform Downloads](https://developer.hashicorp.com/terraform/downloads) and add its folder to your system PATH)*
+*   **macOS (via Homebrew):**
+    ```bash
+    brew tap hashicorp/tap
+    brew install hashicorp/tap/terraform
+    ```
+*   **Linux (Ubuntu/Debian):**
+    ```bash
+    wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+    sudo apt update && sudo apt install terraform
+    ```
+
+#### 2. Installing Ansible
+> [!IMPORTANT]
+> **Windows Users:** Ansible does not support running natively on Windows to manage other systems. You **must** use Windows Subsystem for Linux (WSL) to run Ansible playbooks.
+*   **Windows (via WSL Ubuntu):**
+    1. Install WSL (Ubuntu) by running in PowerShell as Administrator:
+       ```powershell
+       wsl --install
+       ```
+       *(Restart your machine if prompted)*
+    2. Open your WSL Ubuntu terminal and run the following commands to install Ansible:
+       ```bash
+       sudo apt update
+       sudo apt install -y software-properties-common
+       sudo add-apt-repository --yes --update ppa:ansible/ansible
+       sudo apt install -y ansible
+       ```
+*   **macOS (via Homebrew):**
+    ```bash
+    brew install ansible
+    ```
+*   **Linux (Ubuntu/Debian):**
+    ```bash
+    sudo apt update
+    sudo apt install -y software-properties-common
+    sudo add-apt-repository --yes --update ppa:ansible/ansible
+    sudo apt install -y ansible
+    ```
+
+#### 3. Installing AWS CLI
+*   **Windows:** Download and run the [AWS CLI MSI installer](https://awscli.amazonaws.com/AWSCLIV2.msi).
+*   **macOS (via Homebrew):**
+    ```bash
+    brew install awscli
+    ```
+*   **Linux:**
+    ```bash
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    unzip awscliv2.zip
+    sudo ./aws/install
+    ```
+
+---
+
+### AWS Configuration Steps
 
 #### 1. AWS Account & IAM User Configuration
 1. Sign in to the [AWS Management Console](https://aws.amazon.com/).
