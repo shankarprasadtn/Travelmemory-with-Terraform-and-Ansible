@@ -6,50 +6,11 @@ The provisioning is managed using **Terraform**, and the configuration managemen
 
 ---
 
-## 🏛️ System Architecture
+## 🏛️ System Architecture (Infographic Format)
 
-The following diagram illustrates the secure network layout, showing how components interact across the public and private subnets.
+The diagram below illustrates the network configuration, security groups, and request flow from the user browser through Nginx, Express, and MongoDB.
 
-```mermaid
-graph TD
-    subgraph Internet ["Public Internet"]
-        user["User's Browser"]
-    end
-
-    subgraph AWS ["AWS Cloud (VPC: 10.0.0.0/16)"]
-        subgraph PublicSubnet ["Public Subnet (10.0.1.0/24)"]
-            igw["Internet Gateway"]
-            nat["NAT Gateway"]
-            
-            subgraph WebServer ["Web Server EC2 (t2.micro)"]
-                nginx["Nginx (Port 80)"]
-                react["React Frontend (Static Files)"]
-                express["Express.js App (Port 3001, PM2)"]
-            end
-        end
-
-        subgraph PrivateSubnet ["Private Subnet (10.0.2.0/24)"]
-            subgraph DBServer ["Database Server EC2 (t2.micro)"]
-                mongodb["MongoDB (Port 27017)"]
-            end
-        end
-    end
-
-    %% Network Routes
-    user -->|HTTP: Port 80| nginx
-    nginx -->|Serves Static Files| react
-    nginx -->|Reverse Proxy: /api/*| express
-    express -->|Port 27017 (Auth)| mongodb
-    DBServer -->|Outbound Updates| nat
-    nat -->|Outbound Traffic| igw
-    igw -->|Internet| Internet
-
-    %% Security restrictions
-    style PrivateSubnet fill:#ffe6e6,stroke:#ff0000,stroke-width:1px
-    style PublicSubnet fill:#e6f2ff,stroke:#0066cc,stroke-width:1px
-    style WebServer fill:#ffffff,stroke:#333,stroke-width:2px
-    style DBServer fill:#ffffff,stroke:#333,stroke-width:2px
-```
+![System Architecture and Data Flow Infographic](data_flow_infographic.png)
 
 ### Key Security & Architectural Features:
 1. **Network Isolation:** The Database Server is located in a private subnet, preventing direct ingress from the internet. The Web Server is in a public subnet to accept user traffic.
